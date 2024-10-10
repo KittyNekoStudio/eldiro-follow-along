@@ -21,7 +21,6 @@ pub struct Expression {
 impl Number {
     pub fn new(string: &str) -> (&str, Self) {
         let (string, number) = utils::extract_digits(string);
-
         (string, Self(number.parse().unwrap()))
     }
 }
@@ -45,7 +44,11 @@ impl Operation {
 impl Expression {
     pub fn new(string: &str) -> (&str, Self) {
         let (string, lhs) = Number::new(string);
+        let (string, _) = utils::extract_whitespace(string);
+
         let (string, op) = Operation::new(string);
+        let (string, _) = utils::extract_whitespace(string);
+
         let (string, rhs) = Number::new(string);
 
         return (string, Self { lhs, rhs, op });
@@ -58,6 +61,9 @@ mod tests {
 
     #[test]
     fn parse_number() {
+        let line = line!();
+        println!("{line}");
+
         assert_eq!(Number::new("123"), ("", Number(123)));
     }
     #[test]
@@ -86,6 +92,20 @@ mod tests {
                     lhs: Number(1),
                     rhs: Number(2),
                     op: Operation::Add
+                }
+            )
+        );
+    }
+    #[test]
+    fn parse_exprestion_with_whitespace() {
+        assert_eq!(
+            Expression::new("2 * 2"),
+            (
+                "",
+                Expression {
+                    lhs: Number(2),
+                    rhs: Number(2),
+                    op: Operation::Mul
                 }
             )
         );
