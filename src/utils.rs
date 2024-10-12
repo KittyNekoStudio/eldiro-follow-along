@@ -17,41 +17,52 @@ pub(crate) fn take_while(accept: impl Fn(char) -> bool, string: &str) -> (&str, 
     (remainder, extracted)
 }
 
-pub(crate) fn tag<'a>(starting_text: &str, string: &'a str) -> &'a str {
-    if string.starts_with(starting_text) {
-        &string[starting_text.len()..]
+pub(crate) fn take_while1(
+    accept: impl Fn(char) -> bool,
+    string: &str,
+    error_msg: String,
+) -> Result<(&str, &str), String> {
+    let (remainder, extracted) = take_while(accept, string);
+
+    if extracted.is_empty() {
+        Err(error_msg)
     } else {
-        panic!("expected {}", starting_text);
+        Ok((remainder, extracted))
+    }
+}
+pub(crate) fn tag<'a>(starting_text: &str, string: &'a str) -> Result<&'a str, String> {
+    if string.starts_with(starting_text) {
+        Ok(&string[starting_text.len()..])
+    } else {
+        Err(format!("expected {}", starting_text))
     }
 }
 
-pub(crate) fn extract_digits(string: &str) -> (&str, &str) {
-    take_while(|char| char.is_ascii_digit(), string)
+pub(crate) fn extract_digits(string: &str) -> Result<(&str, &str), String> {
+    take_while1(
+        |char| char.is_ascii_digit(),
+        string,
+        "expected digits".to_string(),
+    )
 }
 
 pub(crate) fn extract_whitespace(string: &str) -> (&str, &str) {
     take_while(|char| char == ' ', string)
 }
 
-pub(crate) fn extract_ops(string: &str) -> (&str, &str) {
-    match &string[0..1] {
-        "+" | "-" | "*" | "/" => {}
-        _ => panic!("bad operator"),
-    }
-
-    (&string[1..], &string[0..1])
+pub(crate) fn extract_whitespace1(string: &str) -> Result<(&str, &str), String> {
+    take_while1(|char| char == ' ', string, "expected a space".to_string())
 }
-
-pub(crate) fn extract_identifier(string: &str) -> (&str, &str) {
+pub(crate) fn extract_identifier(string: &str) -> Result<(&str, &str), String> {
     let input_starts_with_alphabetic = string
         .chars()
         .next()
         .map(|char| char.is_ascii_alphabetic())
         .unwrap_or(false);
     if input_starts_with_alphabetic {
-        take_while(|char| char.is_ascii_alphanumeric(), string)
+        Ok(take_while(|char| char.is_ascii_alphanumeric(), string))
     } else {
-        (string, "")
+        Err("expected identifier".to_string())
     }
 }
 
@@ -61,35 +72,19 @@ mod tests {
 
     #[test]
     fn extract_one_digit() {
-        assert_eq!(extract_digits("1+2"), ("+2", "1"));
+        assert_eq!(extract_digits("1+2"), Ok(("+2", "1")));
     }
     #[test]
     fn extract_multiple_digits() {
-        assert_eq!(extract_digits("10-20"), ("-20", "10"));
+        assert_eq!(extract_digits("10-20"), Ok(("-20", "10")));
     }
     #[test]
-    fn do_not_extract_anything_from_empty_input() {
-        assert_eq!(extract_digits(""), ("", ""));
+    fn do_not_extract_digits_when_input_is_invalid() {
+        assert_eq!(extract_digits("abcd"), Err("expected digits".to_string()));
     }
     #[test]
     fn extract_digits_with_no_remainder() {
-        assert_eq!(extract_digits("100"), ("", "100"));
-    }
-    #[test]
-    fn extract_plus() {
-        assert_eq!(extract_ops("+2"), ("2", "+"));
-    }
-    #[test]
-    fn extract_minus() {
-        assert_eq!(extract_ops("-10"), ("10", "-"));
-    }
-    #[test]
-    fn extract_multiply() {
-        assert_eq!(extract_ops("*3"), ("3", "*"));
-    }
-    #[test]
-    fn extract_divide() {
-        assert_eq!(extract_ops("/4"), ("4", "/"));
+        assert_eq!(extract_digits("100"), Ok(("", "100")));
     }
     #[test]
     fn extract_spaces() {
@@ -97,18 +92,28 @@ mod tests {
     }
     #[test]
     fn extract_alphbetic_identifier() {
-        assert_eq!(extract_identifier("abcdEFG stop"), (" stop", "abcdEFG"));
+        assert_eq!(extract_identifier("abcdEFG stop"), Ok((" stop", "abcdEFG")));
     }
     #[test]
     fn extract_alphanumaric_identifier() {
-        assert_eq!(extract_identifier("foobar1()"), ("()", "foobar1"));
+        assert_eq!(extract_identifier("foobar1()"), Ok(("()", "foobar1")));
     }
     #[test]
     fn cannot_extract_identifier_beginning_with_number() {
-        assert_eq!(extract_identifier("123abc"), ("123abc", ""));
+        assert_eq!(
+            extract_identifier("123abc"),
+            Err("expected identifier".to_string())
+        );
     }
     #[test]
     fn tag_word() {
-        assert_eq!(tag("let", "let a"), " a");
+        assert_eq!(tag("let", "let a"), Ok(" a"));
+    }
+    #[test]
+    fn do_not_extract_spaces1_when_input_does_not_start_with_them() {
+        assert_eq!(
+            extract_whitespace1("blah"),
+            Err("expected a space".to_string())
+        );
     }
 }
