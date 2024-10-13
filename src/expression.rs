@@ -57,7 +57,7 @@ impl Expression {
     pub fn new_number(string: &str) -> Result<(&str, Self), String> {
         Number::new(string).map(|(string, number)| (string, Self::Number(number)))
     }
-    pub(crate) fn evaluate(&self) -> Value {
+    pub(crate) fn eval(&self) -> Value {
         match self {
             Self::Number(Number(n)) => Value::Number(*n),
             Self::Operation { lhs, rhs, op } => {
@@ -139,7 +139,7 @@ mod tests {
                 rhs: Number(10),
                 op: Operation::Addition
             }
-            .evaluate(),
+            .eval(),
             Value::Number(20)
         );
     }
@@ -151,7 +151,7 @@ mod tests {
                 rhs: Number(5),
                 op: Operation::Subtraction
             }
-            .evaluate(),
+            .eval(),
             Value::Number(-4)
         );
     }
@@ -163,7 +163,7 @@ mod tests {
                 rhs: Number(6),
                 op: Operation::Multiplication
             }
-            .evaluate(),
+            .eval(),
             Value::Number(30)
         );
     }
@@ -175,7 +175,7 @@ mod tests {
                 rhs: Number(20),
                 op: Operation::Division
             }
-            .evaluate(),
+            .eval(),
             Value::Number(10)
         );
     }

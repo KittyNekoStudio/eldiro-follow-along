@@ -30,7 +30,7 @@ impl BindingDef {
         ))
     }
     pub fn evaluate(&self, environment: &mut Enviroment) {
-        environment.store_binding(self.name.clone(), self.val.evaluate());
+        environment.store_binding(self.name.clone(), self.val.eval());
     }
 }
 
